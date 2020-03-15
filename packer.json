@@ -61,26 +61,38 @@
       "execute_command": "echo 'vagrant' | {{.Vars}} sudo -S -E sh -eux '{{.Path}}'",
       "expect_disconnect": true,
       "scripts": [
-        "{{template_dir}}/bento-scripts/update.sh",
-        "{{template_dir}}/bento-scripts/motd.sh",
-        "{{template_dir}}/bento-scripts/sshd.sh",
-        "{{template_dir}}/bento-scripts/networking.sh",
-        "{{template_dir}}/bento-scripts/sudoers.sh",
-        "{{template_dir}}/bento-scripts/vagrant.sh",
-        "{{template_dir}}/bento-scripts/systemd.sh",
-        "{{template_dir}}/bento-scripts/virtualbox.sh",
-        "{{template_dir}}/bento-scripts/cleanup.sh",
-        "{{template_dir}}/bento-scripts/minimize.sh"
+        "{{template_dir}}/scripts/bento/update.sh",
+        "{{template_dir}}/scripts/bento/motd.sh",
+        "{{template_dir}}/scripts/bento/sshd.sh",
+        "{{template_dir}}/scripts/bento/networking.sh",
+        "{{template_dir}}/scripts/bento/sudoers.sh",
+        "{{template_dir}}/scripts/bento/vagrant.sh",
+        "{{template_dir}}/scripts/bento/systemd.sh",
+        "{{template_dir}}/scripts/bento/virtualbox.sh",
+        "{{template_dir}}/scripts/bento/cleanup.sh",
+        "{{template_dir}}/scripts/bento/minimize.sh"
       ]
     },
     {
       "type": "shell",
-      "script": "{{template_dir}}/scripts/k3s-install.sh"
+      "script": "{{template_dir}}/scripts/install-docker.sh"
+    },
+    {
+      "type": "shell",
+      "environment_vars": [
+        "K3S_KUBECONFIG_MODE=666",
+        "INSTALL_K3S_EXEC=--docker"
+      ],
+      "script": "{{template_dir}}/scripts/get-k3s-io.sh"
+    },
+    {
+      "type": "shell",
+      "script": "{{template_dir}}/scripts/add-base-k8s-services.sh"
     }
   ],
   "variables": {
     "box_basename": "debian-10.3-k3s",
-    "build_directory": "../../builds",
+    "build_directory": "build",
     "http_directory": "{{template_dir}}/http",
     "build_timestamp": "{{isotime \"20060102150405\"}}",
     "cpus": "1",
