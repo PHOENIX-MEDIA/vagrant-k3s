@@ -51,6 +51,16 @@
   ],
   "provisioners": [
     {
+      "type": "file",
+      "source": "scripts/get-k3s-io.sh",
+      "destination": "/tmp/get-k3s-io.sh"
+    },
+    {
+      "type": "file",
+      "source": "scripts/install-services.sh",
+      "destination": "/tmp/install-services.sh"
+    },
+    {
       "type": "shell",
       "environment_vars": [
         "HOME_DIR=/home/vagrant",
@@ -75,19 +85,7 @@
     },
     {
       "type": "shell",
-      "script": "{{template_dir}}/scripts/install-docker.sh"
-    },
-    {
-      "type": "shell",
-      "environment_vars": [
-        "K3S_KUBECONFIG_MODE=666",
-        "INSTALL_K3S_EXEC=--docker"
-      ],
-      "script": "{{template_dir}}/scripts/get-k3s-io.sh"
-    },
-    {
-      "type": "shell",
-      "script": "{{template_dir}}/scripts/add-base-k8s-services.sh"
+      "script": "{{template_dir}}/scripts/vagrant-installer.sh"
     }
   ],
   "variables": {
@@ -96,7 +94,7 @@
     "http_directory": "{{template_dir}}/http",
     "build_timestamp": "{{isotime \"20060102150405\"}}",
     "cpus": "1",
-    "disk_size": "131072",
+    "disk_size": "204799",
     "git_revision": "__unknown_git_revision__",
     "headless": "true",
     "http_proxy": "{{env `http_proxy`}}",
