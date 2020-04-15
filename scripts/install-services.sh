@@ -22,6 +22,9 @@ sed -i 's#ExecStart=/usr/bin/dockerd#ExecStart=/usr/bin/dockerd -H unix:///var/r
 systemctl daemon-reload
 systemctl restart docker
 
+### We need legacyiptables in Debian 10 for DNS and stuff to work
+update-alternatives --set iptables /usr/sbin/iptables-legacy
+
 ### Install k3s
 K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" /tmp/get-k3s-io.sh
 
