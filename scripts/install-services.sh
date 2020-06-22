@@ -36,7 +36,7 @@ export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 grep -q KUBECONFIG /root/.profile || echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /root/.profile
 
 ### Install Helm
-curl -sfL -o /tmp/helm.tar.gz https://get.helm.sh/helm-v3.1.2-linux-amd64.tar.gz
+curl -sfL -o /tmp/helm.tar.gz https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz
 tar -C /usr/bin -xzf /tmp/helm.tar.gz --strip-components=1 linux-amd64/helm
 rm /tmp/helm.tar.gz
 
