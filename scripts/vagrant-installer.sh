@@ -13,5 +13,5 @@ export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 grep -q KUBECONFIG /home/vagrant/.profile || echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /home/vagrant/.profile
 
 ### Add the main helm repo
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm repo add stable https://charts.helm.sh/stable/
 helm repo update

@@ -26,7 +26,7 @@ systemctl restart docker
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 ### Install k3s
-K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" /tmp/get-k3s-io.sh
+K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" INSTALL_K3S_VERSION="v1.19.10+k3s1" /tmp/get-k3s-io.sh
 
 sleep 30s
 kubectl get nodes
@@ -40,7 +40,7 @@ curl -sfL -o /tmp/helm.tar.gz https://get.helm.sh/helm-v3.2.4-linux-amd64.tar.gz
 tar -C /usr/bin -xzf /tmp/helm.tar.gz --strip-components=1 linux-amd64/helm
 rm /tmp/helm.tar.gz
 
-helm repo add stable https://kubernetes-charts.storage.googleapis.com/
+helm repo add stable https://charts.helm.sh/stable/
 helm repo update
 
 ### Install nginx ingress without load balancer by using host port binds
