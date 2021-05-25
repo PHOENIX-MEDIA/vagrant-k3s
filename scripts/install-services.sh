@@ -26,7 +26,7 @@ systemctl restart docker
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 ### Install k3s
-K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" INSTALL_K3S_VERSION="v1.19.10+k3s1" /tmp/get-k3s-io.sh
+K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" INSTALL_K3S_VERSION="v1.18.18+k3s1" /tmp/get-k3s-io.sh
 
 sleep 30s
 kubectl get nodes
