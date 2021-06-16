@@ -9,7 +9,6 @@ if [ -d /etc/update-motd.d ]; then
 
     cat >> "$MOTD_CONFIG" <<BENTO
 #!/bin/sh
-
 cat <<'EOF'
 $bento
 EOF
