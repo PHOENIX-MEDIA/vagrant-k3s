@@ -27,7 +27,7 @@ echo "We need legacyiptables in Debian 10 for DNS and stuff to work"
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 echo "Install k3s"
-K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" INSTALL_K3S_VERSION="v1.18.18+k3s1" /home/vagrant/get-k3s-io.sh
+K3S_KUBECONFIG_MODE="666" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" INSTALL_K3S_VERSION="v1.19.14+k3s1" /home/vagrant/get-k3s-io.sh
 
 sleep 30s
 kubectl get nodes

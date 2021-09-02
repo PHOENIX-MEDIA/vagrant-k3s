@@ -442,7 +442,7 @@ setup_binary() {
 
 # --- setup selinux policy ---
 setup_selinux() {
-    case ${INSTALL_K3S_CHANNEL} in
+    case ${INSTALL_K3S_CHANNEL} in 
         *testing)
             rpm_channel=testing
             ;;
@@ -459,12 +459,20 @@ setup_selinux() {
         rpm_site="rpm-testing.rancher.io"
     fi
 
-    policy_hint="please install:
-    yum install -y container-selinux selinux-policy-base
-    yum install -y https://${rpm_site}/k3s/${rpm_channel}/common/centos/7/noarch/k3s-selinux-0.2-1.el7_8.noarch.rpm
+    [ -r /etc/os-release ] && . /etc/os-release
+    if [ "${ID_LIKE:-}" = suse ]; then
+        policy_hint="k3s with SELinux is currently not supported on SUSE/openSUSE systems.
+    Please disable SELinux before installing k3s.
 "
+    else
+        policy_hint="please install:
+    yum install -y container-selinux selinux-policy-base
+    yum install -y https://${rpm_site}/k3s/${rpm_channel}/common/centos/${VERSION_ID:-7}/noarch/k3s-selinux-0.3-0.el${VERSION_ID:-7}.noarch.rpm
+"
+    fi
+
     policy_error=fatal
-    if [ "$INSTALL_K3S_SELINUX_WARN" = true ] || grep -q 'ID=flatcar' /etc/os-release; then
+    if [ "$INSTALL_K3S_SELINUX_WARN" = true ] || [ "${ID_LIKE:-}" = coreos ]; then
         policy_error=warn
     fi
 
@@ -617,7 +625,11 @@ getshims() {
 killtree $({ set +x; } 2>/dev/null; getshims; set -x)
 
 do_unmount_and_remove() {
-    awk -v path="$1" '$2 ~ ("^" path) { print $2 }' /proc/self/mounts | sort -r | xargs -r -t -n 1 sh -c 'umount "$0" && rm -rf "$0"'
+    set +x
+    while read -r _ path _; do
+        case "$path" in $1*) echo "$path" ;; esac
+    done < /proc/self/mounts | sort -r | xargs -r -t -n 1 sh -c 'umount "$0" && rm -rf "$0"'
+    set -x
 }
 
 do_unmount_and_remove '/run/k3s'
@@ -744,6 +756,7 @@ TasksMax=infinity
 TimeoutStartSec=0
 Restart=always
 RestartSec=5s
+ExecStartPre=/bin/sh -xc '! /usr/bin/systemctl is-enabled --quiet nm-cloud-setup.service'
 ExecStartPre=-/sbin/modprobe br_netfilter
 ExecStartPre=-/sbin/modprobe overlay
 ExecStart=${BIN_DIR}/k3s \\
@@ -835,6 +848,11 @@ openrc_start() {
 
 # --- startup systemd or openrc service ---
 service_enable_and_start() {
+    if [ -f "/proc/cgroups" ] && [ "$(grep memory /proc/cgroups | while read -r n n n enabled; do echo $enabled; done)" -eq 0 ];
+    then
+        info 'Failed to find memory cgroup, you may need to add "cgroup_memory=1 cgroup_enable=memory" to your linux cmdline (/boot/cmdline.txt on a Raspberry Pi)'
+    fi
+
     [ "${INSTALL_K3S_SKIP_ENABLE}" = true ] && return
 
     [ "${HAS_SYSTEMD}" = true ] && systemd_enable
