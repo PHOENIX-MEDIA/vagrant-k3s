@@ -58,11 +58,6 @@
   ],
   "provisioners": [
     {
-      "destination": "/home/vagrant/get-k3s-io.sh",
-      "source": "scripts/get-k3s-io.sh",
-      "type": "file"
-    },
-    {
       "destination": "/home/vagrant/install-services.sh",
       "source": "scripts/install-services.sh",
       "type": "file"
@@ -99,7 +94,7 @@
     "box_basename": "debian-10.10.0",
     "build_directory": "build",
     "build_timestamp": "{{isotime \"20060102150405\"}}",
-    "cpus": "1",
+    "cpus": "4",
     "disk_size": "204799",
     "git_revision": "__unknown_git_revision__",
     "guest_additions_url": "",
@@ -110,7 +105,7 @@
 	"iso_checksum_type": "sha256",
     "iso_checksum": "c433254a7c5b5b9e6a05f9e1379a0bd6ab3323f89b56537b684b6d1bd1f8b6ad",
     "iso_name": "debian-10.10.0-amd64-netinst.iso",
-    "memory": "1024",
+    "memory": "8190",
     "mirror": "https://cdimage.debian.org/cdimage/archive",
     "mirror_directory": "10.10.0/amd64/iso-cd",
     "name": "debian-10.10.0",

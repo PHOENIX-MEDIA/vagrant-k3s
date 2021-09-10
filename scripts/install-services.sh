@@ -27,11 +27,10 @@ echo "We need legacyiptables in Debian 10 for DNS and stuff to work"
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 echo "Install k3s"
-K3S_KUBECONFIG_MODE="600" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --flannel-iface eth1 --docker" INSTALL_K3S_VERSION="v1.19.14+k3s1" /home/vagrant/get-k3s-io.sh
+curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="600" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --docker" INSTALL_K3S_VERSION="v1.19.14+k3s1" sh -s -
 
 sleep 30s
 kubectl get nodes
-rm /home/vagrant/get-k3s-io.sh
 
 echo "Setup cluster access @see https://rancher.com/docs/k3s/latest/en/cluster-access/"
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
@@ -43,7 +42,10 @@ curl -sfL -o /tmp/helm.tar.gz https://get.helm.sh/helm-v3.5.4-linux-amd64.tar.gz
 tar -C /usr/bin -xzf /tmp/helm.tar.gz --strip-components=1 linux-amd64/helm
 rm /tmp/helm.tar.gz
 
+### Add the helm repos
 helm repo add stable https://charts.helm.sh/stable
+helm repo add jetstack https://charts.jetstack.io
+helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 helm repo update
 
 echo "Install nginx ingress without load balancer by using host port binds"
@@ -89,3 +91,22 @@ EOF
 echo "Patch the default deployment to skip auth and give the system some time"
 kubectl patch deploy --namespace kubernetes-dashboard kubernetes-dashboard --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-skip-login"}]'
 sleep 10s
+
+
+echo "--------------- INSTALL RANCHER ---------------"
+
+echo "Create Namespaces"
+kubectl create namespace cert-manager
+kubectl create namespace cattle-system
+
+
+echo "Deploy Cert-Manager"
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.2.0 --create-namespace --set installCRDs=true --wait --timeout 20m
+
+echo "Deploy Rancher"
+helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --wait --timeout 20m
+
+sleep 2m
+
+kubectl delete node debian-10
+sleep 2m
