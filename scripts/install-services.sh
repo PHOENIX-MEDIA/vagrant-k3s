@@ -106,7 +106,7 @@ helm install cert-manager jetstack/cert-manager --namespace cert-manager --versi
 echo "Deploy Rancher"
 helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --wait --timeout 20m
 
+echo "give the cluster some time, and remove curent node from the cluster, that the node is not missing when a projekt vagrant starts"
 sleep 2m
-
 kubectl delete node debian-10
 sleep 2m
