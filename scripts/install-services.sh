@@ -9,7 +9,7 @@ set -x
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
 echo "Prepare package manager"
-apt-get install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common git ssl-cert
+apt-get install -y apt-transport-https ca-certificates curl gnupg2 software-properties-common git ssl-cert jq
 curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
 add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian $(lsb_release -cs) stable"
 
@@ -22,6 +22,10 @@ usermod -a -G docker vagrant
 sed -i 's#ExecStart=/usr/bin/dockerd#ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375#' /lib/systemd/system/docker.service
 systemctl daemon-reload
 systemctl restart docker
+
+# pull alpine and busybox to have it in the box
+docker pull alpine
+docker pull busybox
 
 echo "We need legacyiptables in Debian 10 for DNS and stuff to work"
 update-alternatives --set iptables /usr/sbin/iptables-legacy
@@ -42,6 +46,12 @@ curl -sfL -o /tmp/helm.tar.gz https://get.helm.sh/helm-v3.5.4-linux-amd64.tar.gz
 tar -C /usr/bin -xzf /tmp/helm.tar.gz --strip-components=1 linux-amd64/helm
 rm /tmp/helm.tar.gz
 
+helm plugin install https://github.com/chartmuseum/helm-push.git
+mkdir -p /home/vagrant/.local/share
+cp -a /root/.local/share/helm /home/vagrant/.local/share/
+chown -R vagrant:vagrant /home/vagrant/.local/share
+
+
 ### Add the helm repos
 helm repo add stable https://charts.helm.sh/stable
 helm repo add jetstack https://charts.jetstack.io
@@ -51,50 +61,7 @@ helm repo update
 echo "Install nginx ingress without load balancer by using host port binds"
 helm install nginx stable/nginx-ingress --namespace kube-system --set rbac.create=true,controller.hostNetwork=true,controller.dnsPolicy=ClusterFirstWithHostNet,controller.kind=DaemonSet
 
-echo "Add K8S dashboard"
-GITHUB_URL=https://github.com/kubernetes/dashboard/releases
-VERSION_KUBE_DASHBOARD=$(curl -w '%{url_effective}' -I -L -s -S ${GITHUB_URL}/latest -o /dev/null | sed -e 's|.*/||')
-kubectl create -f https://raw.githubusercontent.com/kubernetes/dashboard/${VERSION_KUBE_DASHBOARD}/aio/deploy/recommended.yaml
-
-echo "We don't need specific auth locally so we set rbac to cluster admin"
-cat <<EOF | kubectl delete -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kubernetes-dashboard
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: kubernetes-dashboard
-subjects:
-  - kind: ServiceAccount
-    name: kubernetes-dashboard
-    namespace: kubernetes-dashboard
-EOF
-
-cat <<EOF | kubectl create -f -
-apiVersion: rbac.authorization.k8s.io/v1
-kind: ClusterRoleBinding
-metadata:
-  name: kubernetes-dashboard
-  namespace: kubernetes-dashboard
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: cluster-admin
-subjects:
-  - kind: ServiceAccount
-    name: kubernetes-dashboard
-    namespace: kubernetes-dashboard
-EOF
-
-echo "Patch the default deployment to skip auth and give the system some time"
-kubectl patch deploy --namespace kubernetes-dashboard kubernetes-dashboard --type='json' -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-skip-login"}]'
-sleep 10s
-
-
 echo "--------------- INSTALL RANCHER ---------------"
-
 echo "Create Namespaces"
 kubectl create namespace cert-manager
 kubectl create namespace cattle-system
@@ -104,9 +71,35 @@ echo "Deploy Cert-Manager"
 helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.2.0 --create-namespace --set installCRDs=true --wait --timeout 20m
 
 echo "Deploy Rancher"
-helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --wait --timeout 20m
+helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --set replicas=1  --wait --timeout 20m
+
+echo "Pre-Configure Rancher"
+echo "wait until rancher server started"
+while true; do
+  RANCHER_POD=$(kubectl -n cattle-system get pods -l app=rancher | grep '1/1' | head -1 | awk '{ print $1 }')
+  RANCHER_POD_CMD="kubectl -n cattle-system exec ${RANCHER_POD}"
+  $RANCHER_POD_CMD -- curl -sLk https://127.0.0.1/ping && break
+  sleep 5
+done
+
+# Login
+echo "wait until rancher is ready and create a Token"
+while true; do
+
+	LOGINRESPONSE=$($RANCHER_POD_CMD -- curl "https://127.0.0.1/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"admin"}' --insecure)
+	LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
+
+    if [ "$LOGINTOKEN" != "null" ]; then
+        break
+    else
+        sleep 5
+    fi
+done
+
+## change password
+$RANCHER_POD_CMD -- curl -s 'https://127.0.0.1/v3/users?action=changepassword' -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"currentPassword":"admin","newPassword":"'admin'"}' --insecure
 
 echo "give the cluster some time, and remove curent node from the cluster, that the node is not missing when a projekt vagrant starts"
-sleep 2m
+sleep 10s
 kubectl delete node debian-10
-sleep 2m
+sleep 30s

@@ -12,4 +12,4 @@ sudo /home/vagrant/install-services.sh
 export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
 grep -q KUBECONFIG /home/vagrant/.profile || echo "export KUBECONFIG=/etc/rancher/k3s/k3s.yaml" >> /home/vagrant/.profile
 
-rm /home/vagrant/install-services.sh
+sudo rm -rf /home/vagrant/install-services.sh
