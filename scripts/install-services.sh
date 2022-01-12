@@ -83,21 +83,21 @@ while true; do
 done
 
 # Login
-#echo "wait until rancher is ready and create a Token"
-#while true; do
+echo "wait until rancher is ready and create a Token"
+while true; do
 
-#	LOGINRESPONSE=$($RANCHER_POD_CMD -- curl "https://127.0.0.1/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"admin"}' --insecure)
-#	LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
+	LOGINRESPONSE=$($RANCHER_POD_CMD -- curl "https://127.0.0.1/v3-public/localProviders/local?action=login" -H 'content-type: application/json' --data-binary '{"username":"admin","password":"admin"}' --insecure)
+	LOGINTOKEN=$(echo $LOGINRESPONSE | jq -r .token)
 
-#    if [ "$LOGINTOKEN" != "null" ]; then
-#        break
-#    else
-#        sleep 5
-#    fi
-#done
+    if [ "$LOGINTOKEN" != "null" ]; then
+        break
+    else
+        sleep 5
+    fi
+done
 
 ## change password
-#$RANCHER_POD_CMD -- curl -s 'https://127.0.0.1/v3/users?action=changepassword' -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"currentPassword":"admin","newPassword":"'admin'"}' --insecure
+$RANCHER_POD_CMD -- curl -s 'https://127.0.0.1/v3/users?action=changepassword' -H 'content-type: application/json' -H "Authorization: Bearer $LOGINTOKEN" --data-binary '{"currentPassword":"admin","newPassword":"'thisisunsafe'"}' --insecure
 
 echo "give the cluster some time, and remove curent node from the cluster, that the node is not missing when a projekt vagrant starts"
 sleep 10s
