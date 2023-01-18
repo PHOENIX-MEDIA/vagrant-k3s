@@ -17,6 +17,9 @@ echo "Install docker"
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io
 
+echo "Install ntp"
+apt-get install -y ntp
+
 echo "Enable ( unsecure ) docker remote access and add vagrant user to docker group to allow usage"
 usermod -a -G docker vagrant
 sed -i 's#ExecStart=/usr/bin/dockerd#ExecStart=/usr/bin/dockerd -H unix:///var/run/docker.sock -H tcp://0.0.0.0:2375#' /lib/systemd/system/docker.service
@@ -31,7 +34,7 @@ echo "We need legacyiptables in Debian 10 for DNS and stuff to work"
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
 echo "Install k3s"
-curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="600" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --docker" INSTALL_K3S_VERSION="v1.20.14+k3s1" sh -s -
+curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="600" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --docker" INSTALL_K3S_VERSION="v1.23.14+k3s1" sh -s -
 
 sleep 30s
 kubectl get nodes
@@ -54,12 +57,13 @@ chown -R vagrant:vagrant /home/vagrant/.local/share
 
 ### Add the helm repos
 helm repo add stable https://charts.helm.sh/stable
+helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
 helm repo add jetstack https://charts.jetstack.io
 helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 helm repo update
 
 echo "Install nginx ingress without load balancer by using host port binds"
-helm install nginx stable/nginx-ingress --namespace kube-system --set rbac.create=true,controller.hostNetwork=true,controller.dnsPolicy=ClusterFirstWithHostNet,controller.kind=DaemonSet
+helm install nginx ingress-nginx/ingress-nginx --namespace kube-system --set rbac.create=true,controller.hostNetwork=true,controller.dnsPolicy=ClusterFirstWithHostNet,controller.kind=DaemonSet,controller.ingressClass=nginx,controller.ingressClassResource.default=true
 
 echo "--------------- INSTALL RANCHER ---------------"
 echo "Create Namespaces"
@@ -68,10 +72,10 @@ kubectl create namespace cattle-system
 
 
 echo "Deploy Cert-Manager"
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.2.0 --create-namespace --set installCRDs=true --wait --timeout 20m
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.9.1 --create-namespace --set installCRDs=true --wait --timeout 20m
 
 echo "Deploy Rancher"
-helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --set replicas=1 --set bootstrapPassword=admin  --wait --timeout 20m
+helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --set replicas=1 --set bootstrapPassword=admin --set ingress.extraAnnotations.'kubernetes\.io/ingress\.class'=nginx  --wait --timeout 20m
 
 echo "Pre-Configure Rancher"
 echo "wait until rancher server started"
