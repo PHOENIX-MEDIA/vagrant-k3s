@@ -17,8 +17,8 @@ echo "Install docker"
 apt-get update
 apt-get install -y docker-ce docker-ce-cli containerd.io
 
-echo "Install ntp"
-apt-get install -y ntp
+echo "Install ntp and socat"
+apt-get install -y ntp socat
 
 echo "Enable ( unsecure ) docker remote access and add vagrant user to docker group to allow usage"
 usermod -a -G docker vagrant
