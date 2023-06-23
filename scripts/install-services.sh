@@ -33,8 +33,11 @@ docker pull busybox
 echo "We need legacyiptables in Debian 10 for DNS and stuff to work"
 update-alternatives --set iptables /usr/sbin/iptables-legacy
 
+echo "Add google dns server"
+echo "nameserver 8.8.8.8" >> /etc/resolv.conf
+
 echo "Install k3s"
-curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="600" INSTALL_K3S_EXEC="server --no-deploy traefik --no-deploy servicelb --docker" INSTALL_K3S_VERSION="v1.23.14+k3s1" sh -s -
+curl -sfL https://get.k3s.io | K3S_KUBECONFIG_MODE="600" INSTALL_K3S_EXEC="server --disable traefik --disable servicelb --docker" INSTALL_K3S_VERSION="v1.25.9+k3s1" sh -s - || (journalctl -xe && exit 1)
 
 sleep 30s
 kubectl get nodes
@@ -72,10 +75,10 @@ kubectl create namespace cattle-system
 
 
 echo "Deploy Cert-Manager"
-helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.9.1 --create-namespace --set installCRDs=true --wait --timeout 20m
+helm install cert-manager jetstack/cert-manager --namespace cert-manager --version v1.11.0 --create-namespace --set installCRDs=true --wait --timeout 20m
 
 echo "Deploy Rancher"
-helm install rancher rancher-stable/rancher --namespace cattle-system --set hostname=rancher.local-project.test --set replicas=1 --set bootstrapPassword=admin --set ingress.extraAnnotations.'kubernetes\.io/ingress\.class'=nginx  --wait --timeout 20m
+helm install rancher rancher-stable/rancher --version 2.7.4 --namespace cattle-system --set hostname=rancher.local-project.test --set replicas=1 --set bootstrapPassword=admin --set global.cattle.psp.enabled=false --set ingress.extraAnnotations.'kubernetes\.io/ingress\.class'=nginx  --wait --timeout 20m
 
 echo "Pre-Configure Rancher"
 echo "wait until rancher server started"
